@@ -1,0 +1,252 @@
+﻿@page "/questions"
+@inject HttpClient Http
+@using LearningClassLibrary.Models
+@using LearningClassLibrary
+@using LearningPlatform.Components
+
+<h3>רשימת שאלות</h3>
+
+<div class="d-flex justify-content-end mb-3">
+    <button class="btn btn-success" @onclick="ShowAddQuestionForm">הוספת שאלה</button>
+</div>
+
+@if (showAddForm)
+{
+    <div class="card mb-3">
+        <div class="card-header">@((editingQuestionId.HasValue ? "עריכת שאלה" : "הוספת שאלה חדשה"))</div>
+        <div class="card-body">
+            <form>
+                <div class="mb-3">
+                    <label class="form-label">שאלה</label>
+                    <input type="text" @bind="newQuestion.QuestionText" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">תשובה נכונה</label>
+                    <input type="text" @bind="newQuestion.CorrectAnswer" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">רמת קושי</label>
+                    <select @bind="newQuestion.Difficulty" class="form-select">
+                        @foreach (DifficultyLevel level in Enum.GetValues<DifficultyLevel>())
+                        {
+                            <option value="@level">
+                                @($"{(int)level} - {level}")
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">נושא</label>
+                    <SubjectDropdown OnTopicSelected="HandleTopicSelection" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">תשובה שגויה 1</label>
+                    <input type="text" @bind="newQuestion.IncorrectAnswer1" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">תשובה שגויה 2</label>
+                    <input type="text" @bind="newQuestion.IncorrectAnswer2" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">תשובה שגויה 3</label>
+                    <input type="text" @bind="newQuestion.IncorrectAnswer3" class="form-control" />
+                </div>
+                <button class="btn btn-primary me-2" @onclick="SaveQuestion">שמור</button>
+                <button class="btn btn-secondary" @onclick="CancelAddQuestion">ביטול</button>
+            </form>
+        </div>
+    </div>
+}
+
+@if (showConfirmationPopup)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">אישור מחיקה</h5>
+                    <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                </div>
+                <div class="modal-body">
+                    <p>האם אתה בטוח שברצונך למחוק את השאלה?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger" @onclick="DeleteConfirmed">מחק</button>
+                    <button class="btn btn-secondary" @onclick="CancelDelete">ביטול</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (questions == null)
+{
+    <p>טוען שאלות...</p>
+}
+else if (questions.Count == 0)
+{
+    <p>לא נמצאו שאלות.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>מזהה</th>
+                <th>שאלה</th>
+                <th>תשובה נכונה</th>
+                <th>רמת קושי</th>
+                <th>נושא</th>
+                <th>פעולות</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var question in questions)
+            {
+                <tr>
+                    <td>@question.QuestionID</td>
+                    <td>@question.QuestionText</td>
+                    <td>@question.CorrectAnswer</td>
+                    <td>@question.Difficulty</td>
+                    <td>@question.Topic</td>
+                    <td>
+                        <button class="btn btn-primary" @onclick="() => EditQuestion(question.QuestionID)">ערוך</button>
+                        <button class="btn btn-danger" @onclick="() => ShowDeleteConfirmation(question.QuestionID)">מחק</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Question> questions = new();
+    private bool showAddForm = false;
+    private bool showConfirmationPopup = false;
+    private int? editingQuestionId = null;
+    private int? questionIdToDelete = null;
+    private Question newQuestion = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadQuestions();
+    }
+
+    private async Task LoadQuestions()
+    {
+        questions = await Http.GetFromJsonAsync<List<Question>>("api/questions");
+    }
+
+    private void ShowAddQuestionForm()
+    {
+        showAddForm = true;
+    }
+
+    private void CancelAddQuestion()
+    {
+        showAddForm = false;
+        editingQuestionId = null;
+        newQuestion = new Question();
+    }
+
+    private async Task SaveQuestion()
+    {
+        if (editingQuestionId.HasValue)
+        {
+            // Update existing question
+            var response = await Http.PutAsJsonAsync($"api/questions/{editingQuestionId.Value}", newQuestion);
+            if (response.IsSuccessStatusCode)
+            {
+                // Update the local list
+                var questionIndex = questions.FindIndex(q => q.QuestionID == editingQuestionId.Value);
+                if (questionIndex >= 0)
+                {
+                    questions[questionIndex] = new Question
+                        {
+                            QuestionID = newQuestion.QuestionID,
+                            QuestionText = newQuestion.QuestionText,
+                            CorrectAnswer = newQuestion.CorrectAnswer,
+                            Difficulty = newQuestion.Difficulty,
+                            Topic = newQuestion.Topic,
+                            IncorrectAnswer1 = newQuestion.IncorrectAnswer1,
+                            IncorrectAnswer2 = newQuestion.IncorrectAnswer2,
+                            IncorrectAnswer3 = newQuestion.IncorrectAnswer3
+                        };
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Failed to update question. Status Code: {response.StatusCode}");
+            }
+        }
+        else
+        {
+            // Add new question
+            var response = await Http.PostAsJsonAsync("api/questions", newQuestion);
+            if (response.IsSuccessStatusCode)
+            {
+                questions.Add(newQuestion);
+            }
+            else
+            {
+                Console.WriteLine($"Failed to add question. Status Code: {response.StatusCode}");
+            }
+        }
+
+        await LoadQuestions();
+        CancelAddQuestion();
+    }
+
+    private void HandleTopicSelection(int topicId)
+    {
+        newQuestion.Topic = topicId.ToString();
+    }
+
+    private void ShowDeleteConfirmation(int id)
+    {
+        questionIdToDelete = id;
+        showConfirmationPopup = true;
+    }
+
+    private async Task DeleteConfirmed()
+    {
+        if (questionIdToDelete.HasValue)
+        {
+            var response = await Http.DeleteAsync($"api/questions/{questionIdToDelete.Value}");
+            if (response.IsSuccessStatusCode)
+            {
+                questions.RemoveAll(q => q.QuestionID == questionIdToDelete.Value);
+            }
+            questionIdToDelete = null;
+            showConfirmationPopup = false;
+        }
+    }
+
+    private void CancelDelete()
+    {
+        showConfirmationPopup = false;
+        questionIdToDelete = null;
+    }
+
+    private void EditQuestion(int id)
+    {
+        var questionToEdit = questions.FirstOrDefault(q => q.QuestionID == id);
+        if (questionToEdit != null)
+        {
+            newQuestion = new Question
+                {
+                    QuestionID = questionToEdit.QuestionID,
+                    QuestionText = questionToEdit.QuestionText,
+                    CorrectAnswer = questionToEdit.CorrectAnswer,
+                    Difficulty = questionToEdit.Difficulty,
+                    Topic = questionToEdit.Topic,
+                    IncorrectAnswer1 = questionToEdit.IncorrectAnswer1,
+                    IncorrectAnswer2 = questionToEdit.IncorrectAnswer2,
+                    IncorrectAnswer3 = questionToEdit.IncorrectAnswer3
+                };
+            editingQuestionId = id;
+            showAddForm = true;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,19 @@
+﻿@using LearningClassLibrary.Models
+<select @bind="SelectedDifficulty">
+    @foreach (var level in Enum.GetValues(typeof(DifficultyLevel)))
+    {
+        <option value="@((int)level)">@level</option>
+    }
+</select>
+
+<p>Selected Difficulty: @SelectedDifficultyText</p>
+
+@code {
+    // Property to bind selected value
+    private DifficultyLevel? SelectedDifficulty { get; set; }
+
+    // Text for displaying selected value
+    private string SelectedDifficultyText => SelectedDifficulty.HasValue
+        ? SelectedDifficulty.ToString()
+        : "None selected";
+}
