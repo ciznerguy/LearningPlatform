@@ -1,0 +1,66 @@
+﻿@inject HttpClient Http
+@using LearningClassLibrary.Models
+
+<div>
+    <label for="topicSelect" class="form-label">בחר נושא:</label>
+    <select id="topicSelect" class="form-select" @onchange="HandleTopicChange" disabled="@(!TopicsLoaded)">
+        @if (!TopicsLoaded)
+        {
+            <option disabled>Loading topics...</option>
+        }
+        else if (Topics.Count == 0)
+        {
+            <option disabled>No topics available</option>
+        }
+        else
+        {
+            @foreach (var topic in Topics)
+            {
+                <option value="@topic.TopicID">@topic.TopicName</option>
+            }
+        }
+        <option value="add-new">Add new topic...</option>
+    </select>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<int> OnTopicSelected { get; set; }
+
+    private List<Topic> Topics { get; set; } = new();
+    private bool TopicsLoaded { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTopics();
+    }
+
+    private async Task LoadTopics()
+    {
+        try
+        {
+            Topics = await Http.GetFromJsonAsync<List<Topic>>("api/Topics");
+            Console.WriteLine($"Topics loaded successfully: {Topics.Count} topics.");
+            TopicsLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading topics: {ex.Message}");
+            TopicsLoaded = false;
+        }
+    }
+
+    private async Task HandleTopicChange(ChangeEventArgs e)
+    {
+        var selectedValue = e.Value?.ToString();
+        if (selectedValue == "add-new")
+        {
+            Console.WriteLine("Add new topic option selected.");
+        }
+        else if (int.TryParse(selectedValue, out int topicId))
+        {
+            Console.WriteLine($"Topic selected: ID {topicId}");
+            await OnTopicSelected.InvokeAsync(topicId);
+        }
+    }
+}

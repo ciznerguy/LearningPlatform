@@ -1,0 +1,76 @@
+﻿@page "/register"
+@inject HttpClient Http
+
+<h3>הרשמה</h3>
+
+<div class="card" style="max-width: 400px; margin: auto;">
+    <div class="card-body">
+        <form @onsubmit="HandleRegister">
+            <div class="mb-3">
+                <label for="firstName" class="form-label">שם פרטי</label>
+                <input type="text" id="firstName" @bind="registerModel.FirstName" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="lastName" class="form-label">שם משפחה</label>
+                <input type="text" id="lastName" @bind="registerModel.LastName" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">אימייל</label>
+                <input type="email" id="email" @bind="registerModel.Email" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">סיסמה</label>
+                <input type="password" id="password" @bind="registerModel.Password" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-primary w-100">הרשמה</button>
+        </form>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @errorMessage
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert alert-success mt-3">
+                @successMessage
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private RegisterModel registerModel = new();
+    private string? errorMessage;
+    private string? successMessage;
+
+    private async Task HandleRegister()
+    {
+        errorMessage = null;
+        successMessage = null;
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/persons/register", registerModel);
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = "ההרשמה בוצעה בהצלחה!";
+            }
+            else
+            {
+                errorMessage = "אירעה שגיאה בעת ההרשמה.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"אירעה שגיאה: {ex.Message}";
+        }
+    }
+
+    public class RegisterModel
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,64 @@
+﻿@page "/login"
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+<h3>התחברות</h3>
+
+<div class="card" style="max-width: 400px; margin: auto;">
+    <div class="card-body">
+        <form @onsubmit="HandleLogin">
+            <div class="mb-3">
+                <label for="email" class="form-label">אימייל</label>
+                <input type="email" id="email" @bind="loginModel.Email" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">סיסמה</label>
+                <input type="password" id="password" @bind="loginModel.Password" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-primary w-100">התחבר</button>
+        </form>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @errorMessage
+            </div>
+        }
+        <div class="text-center mt-3">
+            <a href="/register" class="btn btn-link">הרשמת משתמש חדש</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel = new();
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+        errorMessage = null; // Reset error message
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/persons/login", loginModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Handle successful login (e.g., redirect to homepage)
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                errorMessage = "האימייל או הסיסמה אינם נכונים.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"אירעה שגיאה: {ex.Message}";
+        }
+    }
+
+    public class LoginModel
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

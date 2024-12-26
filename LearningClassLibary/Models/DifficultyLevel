@@ -1,0 +1,12 @@
+﻿namespace LearningClassLibrary.Models
+{
+    public enum DifficultyLevel
+    {
+        Beginner = 1,
+        Easy = 2,
+        Medium = 3,
+        Hard = 4,
+        Advanced = 5,
+        Expert = 6
+    }
+}
