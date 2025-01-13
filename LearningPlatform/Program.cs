@@ -1,3 +1,4 @@
+using LearningClassLibrary.Services;
 using LearningPlatform.Components;
 
 namespace LearningPlatform
@@ -14,6 +15,8 @@ namespace LearningPlatform
 
             // Register HttpClient
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7160/") });
+
+            builder.Services.AddSingleton<LoginSession>();
 
             var app = builder.Build();
 

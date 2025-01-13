@@ -1,6 +1,8 @@
 ﻿@page "/login"
 @inject NavigationManager Navigation
 @inject HttpClient Http
+@using LearningClassLibrary.Services
+@inject LoginSession LoginSession
 
 <h3>התחברות</h3>
 
@@ -42,8 +44,42 @@
 
             if (response.IsSuccessStatusCode)
             {
-                // Handle successful login (e.g., redirect to homepage)
-                Navigation.NavigateTo("/");
+                var userInfo = await response.Content.ReadFromJsonAsync<UserInfoModel>();
+
+                // Store user details in LoginSession
+                if (userInfo != null)
+                {
+                    LoginSession.SetLoginDetails(
+                        userInfo.PersonID,
+                        userInfo.Name,
+                        userInfo.Email,
+                        userInfo.Role
+                    );
+
+                    // Redirect based on role
+                    if (Enum.TryParse<RoleIn>(userInfo.Role, out var role))
+                    {
+                        switch (role)
+                        {
+                            case RoleIn.Admin:
+                                Navigation.NavigateTo("/admin-dash");
+                                break;
+                            case RoleIn.Teacher:
+                                Navigation.NavigateTo("/teacher-dash");
+                                break;
+                            case RoleIn.Student:
+                                Navigation.NavigateTo("/user-dash");
+                                break;
+                            default:
+                                Navigation.NavigateTo("/");
+                                break;
+                        }
+                    }
+                }
+                else
+                {
+                    errorMessage = "Unable to parse user information.";
+                }
             }
             else
             {
@@ -60,5 +96,20 @@
     {
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+    }
+
+    public class UserInfoModel
+    {
+        public int PersonID { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+    }
+
+    public enum RoleIn
+    {
+        Student,
+        Teacher,
+        Admin
     }
 }
