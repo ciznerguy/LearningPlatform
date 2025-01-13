@@ -1,0 +1,246 @@
+﻿@page "/editusers"
+@inject HttpClient Http
+@using LearningClassLibary.Models
+@using LearningClassLibrary
+@using LearningPlatform.Components
+@inject NavigationManager Navigation
+@inject LearningClassLibrary.Services.LoginSession LoginSession
+
+@if (isPageLoaded)
+{
+    @if (!isAdmin)
+    {
+        <!-- הודעה למשתמש שאינו אדמין, ולאחר ספירה ימחקו ממנו ההרשאות -->
+        <div class="alert alert-danger text-center" role="alert">
+            אינך רשאי לצפות בדף זה. תועבר לדף הבית בעוד @countdown שניות...
+        </div>
+    }
+    else
+    {
+        <!-- כפתור חזרה למסך האדמין -->
+        <button class="btn btn-secondary mb-3" @onclick="NavigateBack">חזור למסך אדמין</button>
+        <h3>עריכת משתמשים שאינם אדמין</h3>
+
+        @if (users == null)
+        {
+            <p>טוען משתמשים...</p>
+        }
+        else if (!users.Any())
+        {
+            <p>לא נמצאו משתמשים שאינם אדמין.</p>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>מספר זיהוי</th>
+                        <th>שם פרטי</th>
+                        <th>שם משפחה</th>
+                        <th>אימייל</th>
+                        <th>טלפון</th>
+                        <th>תאריך לידה</th>
+                        <th>תפקיד</th>
+                        <th>פעולות</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in users)
+                    {
+                        <tr>
+                            <td>@user.PersonID</td>
+                            @if (editingUserId == user.PersonID)
+                            {
+                                <!-- שורה במצב עריכה -->
+                                <td>
+                                    <input class="form-control" @bind="editingUser.FirstName" />
+                                </td>
+                                <td>
+                                    <input class="form-control" @bind="editingUser.LastName" />
+                                </td>
+                                <td>
+                                    <input class="form-control" value="@editingUser.Email" disabled />
+                                </td>
+                                <td>
+                                    <input class="form-control" @bind="editingUser.PhoneNumber" />
+                                </td>
+                                <td>
+                                    <input type="date" class="form-control" @bind="editingUser.DateOfBirth" />
+                                </td>
+                                <td>
+                                    <input class="form-control" @bind="editingUser.Role" />
+                                </td>
+                                <td>
+                                    <button class="btn btn-success btn-sm" @onclick="() => SaveUser(editingUser.PersonID)">שמור</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="CancelEdit">בטל</button>
+                                </td>
+                            }
+                            else
+                            {
+                                <!-- שורה במצב תצוגה -->
+                                <td>@user.FirstName</td>
+                                <td>@user.LastName</td>
+                                <td>@user.Email</td>
+                                <td>@user.PhoneNumber</td>
+                                <td>@(user.DateOfBirth.HasValue ? user.DateOfBirth.Value.ToShortDateString() : "")</td>
+                                <td>@user.Role</td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm" @onclick="() => BeginEdit(user)">ערוך</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => DeleteUser(user.PersonID)">מחק</button>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+}
+
+@code {
+    // רשימת המשתמשים שאינם אדמין
+    private List<Person> users = new();
+    // האם המשתמש הנוכחי הוא אדמין
+    private bool isAdmin;
+    // האם טעינת הדף הושלמה
+    private bool isPageLoaded = false;
+    // ספירה לאחור במידה והמשתמש אינו אדמין
+    private int countdown = 5;
+    // מזהה המשתמש שנמצא במצב עריכה
+    private int? editingUserId = null;
+    // המשתמש הנבחר לעריכה (עותק של המשתמש)
+    private Person? editingUser = null;
+
+    // מתבצע בעת אתחול הרכיב
+    protected override async Task OnInitializedAsync()
+    {
+        // בדיקה האם המשתמש הוא אדמין
+        isAdmin = LoginSession.Role.Equals("Admin");
+        isPageLoaded = true;
+        StateHasChanged();
+
+        if (!isAdmin)
+        {
+            _ = StartCountdown();
+            return;
+        }
+
+        // טעינת רשימת המשתמשים שאינם אדמין
+        await LoadUsersAsync();
+    }
+
+    // ספירה לאחור והפנייה לדף הבית לאחר סיום הספירה
+    private async Task StartCountdown()
+    {
+        while (countdown > 0)
+        {
+            await Task.Delay(1000);
+            countdown--;
+            StateHasChanged();
+        }
+        Navigation.NavigateTo("/");
+    }
+
+    // טעינת המשתמשים מ-API
+    private async Task LoadUsersAsync()
+    {
+        try
+        {
+            users = await Http.GetFromJsonAsync<List<Person>>("api/Person/non-admin-users");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"שגיאה בטעינת המשתמשים: {ex.Message}");
+        }
+    }
+
+    // התחלת מצב עריכה עבור משתמש נבחר – יוצר עותק לעריכה
+    private void BeginEdit(Person user)
+    {
+        editingUserId = user.PersonID;
+        editingUser = new Person
+            {
+                PersonID = user.PersonID,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                DateOfBirth = user.DateOfBirth,
+                Role = user.Role
+            };
+    }
+
+    // ביטול מצב העריכה והחזרה לתצוגה רגילה
+    private void CancelEdit()
+    {
+        editingUserId = null;
+        editingUser = null;
+    }
+
+    // עדכון המשתמש – שומר את השינויים באמצעות API ומעדכן את הרשימה המקומית
+    private async Task SaveUser(int id)
+    {
+        if (editingUser == null)
+            return;
+
+        // הכנת המודל לעדכון
+        var userToUpdate = new
+        {
+            PersonID = editingUser.PersonID,
+            FirstName = editingUser.FirstName,
+            LastName = editingUser.LastName,
+            Email = editingUser.Email,
+            PhoneNumber = editingUser.PhoneNumber,
+            DateOfBirth = editingUser.DateOfBirth,
+            Role = editingUser.Role, // שליחת הערך כפי שהוא (ניתן להמיר אם נדרש)
+            Password = "" // שליחת מחרוזת ריקה למניעת שגיאות
+        };
+
+        // קריאה לעדכון המשתמש בשרת
+        var response = await Http.PutAsJsonAsync($"api/Person/{id}", userToUpdate);
+
+        // במקרה של שגיאה – הדפסת הודעת השגיאה
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorMessage = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"שגיאה בעדכון המשתמש: {errorMessage}");
+            return;
+        }
+
+        Console.WriteLine("משתמש עודכן בהצלחה");
+
+        // עדכון המשתמש ברשימה המקומית
+        var index = users.FindIndex(u => u.PersonID == id);
+        if (index >= 0)
+        {
+            users[index] = editingUser;
+        }
+
+        // יציאה ממצב העריכה
+        editingUserId = null;
+        editingUser = null;
+    }
+
+    // מחיקת משתמש – דוגמה לקריאה למחיקה בשרת, ומעדכן את הרשימה המקומית
+    private async Task DeleteUser(int id)
+    {
+        Console.WriteLine($"ניסיון למחוק משתמש עם מזהה: {id}");
+        var response = await Http.DeleteAsync($"api/Person/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            // הסרת המשתמש מהרשימה המקומית אם המחיקה בשרת הצליחה
+            users.RemoveAll(u => u.PersonID == id);
+        }
+        else
+        {
+            var errorMessage = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"שגיאה במחיקת המשתמש: {errorMessage}");
+        }
+    }
+
+    // ניווט חזרה למסך האדמין
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo("/admin-dash");
+    }
+}

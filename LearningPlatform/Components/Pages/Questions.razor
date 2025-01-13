@@ -1,122 +1,113 @@
 ﻿@page "/questions"
 @inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject LearningClassLibrary.Services.LoginSession LoginSession
 @using LearningClassLibrary.Models
 @using LearningClassLibrary
 @using LearningPlatform.Components
 
-<h3>רשימת שאלות</h3>
-
-<div class="d-flex justify-content-end mb-3">
-    <button class="btn btn-success" @onclick="ShowAddQuestionForm">הוספת שאלה</button>
-</div>
-
-@if (showAddForm)
+@if (IsAuthorized)
 {
-    <div class="card mb-3">
-        <div class="card-header">@((editingQuestionId.HasValue ? "עריכת שאלה" : "הוספת שאלה חדשה"))</div>
-        <div class="card-body">
-            <form>
-                <div class="mb-3">
-                    <label class="form-label">שאלה</label>
-                    <input type="text" @bind="newQuestion.QuestionText" class="form-control" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">תשובה נכונה</label>
-                    <input type="text" @bind="newQuestion.CorrectAnswer" class="form-control" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">רמת קושי</label>
-                    <select @bind="newQuestion.Difficulty" class="form-select">
-                        @foreach (DifficultyLevel level in Enum.GetValues<DifficultyLevel>())
-                        {
-                            <option value="@level">
-                                @($"{(int)level} - {level}")
-                            </option>
-                        }
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">נושא</label>
-                    <SubjectDropdown OnTopicSelected="HandleTopicSelection" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">תשובה שגויה 1</label>
-                    <input type="text" @bind="newQuestion.IncorrectAnswer1" class="form-control" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">תשובה שגויה 2</label>
-                    <input type="text" @bind="newQuestion.IncorrectAnswer2" class="form-control" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">תשובה שגויה 3</label>
-                    <input type="text" @bind="newQuestion.IncorrectAnswer3" class="form-control" />
-                </div>
-                <button class="btn btn-primary me-2" @onclick="SaveQuestion">שמור</button>
-                <button class="btn btn-secondary" @onclick="CancelAddQuestion">ביטול</button>
-            </form>
-        </div>
+    <h3>רשימת שאלות</h3>
+
+    <div class="d-flex justify-content-end mb-3">
+        <button class="btn btn-success" @onclick="ShowAddQuestionForm">הוספת שאלה</button>
     </div>
-}
 
-@if (showConfirmationPopup)
-{
-    <div class="modal fade show d-block" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">אישור מחיקה</h5>
-                    <button type="button" class="btn-close" @onclick="CancelDelete"></button>
-                </div>
-                <div class="modal-body">
-                    <p>האם אתה בטוח שברצונך למחוק את השאלה?</p>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-danger" @onclick="DeleteConfirmed">מחק</button>
-                    <button class="btn btn-secondary" @onclick="CancelDelete">ביטול</button>
-                </div>
+    <!-- כפתור חזרה -->
+    <button class="btn btn-secondary mb-3" @onclick="NavigateBack">חזור למסך אדמין</button>
+
+    @if (showAddForm)
+    {
+        <div class="card mb-3">
+            <div class="card-header">@((editingQuestionId.HasValue ? "עריכת שאלה" : "הוספת שאלה חדשה"))</div>
+            <div class="card-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">שאלה</label>
+                        <input type="text" @bind="newQuestion.QuestionText" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">תשובה נכונה</label>
+                        <input type="text" @bind="newQuestion.CorrectAnswer" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">רמת קושי</label>
+                        <select @bind="newQuestion.Difficulty" class="form-select">
+                            @foreach (DifficultyLevel level in Enum.GetValues<DifficultyLevel>())
+                            {
+                                <option value="@level">
+                                    @($"{(int)level} - {level}")
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">נושא</label>
+                        <SubjectDropdown OnTopicSelected="HandleTopicSelection" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">תשובה שגויה 1</label>
+                        <input type="text" @bind="newQuestion.IncorrectAnswer1" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">תשובה שגויה 2</label>
+                        <input type="text" @bind="newQuestion.IncorrectAnswer2" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">תשובה שגויה 3</label>
+                        <input type="text" @bind="newQuestion.IncorrectAnswer3" class="form-control" />
+                    </div>
+                    <button class="btn btn-primary me-2" @onclick="SaveQuestion">שמור</button>
+                    <button class="btn btn-secondary" @onclick="CancelAddQuestion">ביטול</button>
+                </form>
             </div>
         </div>
-    </div>
-}
+    }
 
-@if (questions == null)
-{
-    <p>טוען שאלות...</p>
-}
-else if (questions.Count == 0)
-{
-    <p>לא נמצאו שאלות.</p>
+    @if (questions == null)
+    {
+        <p>טוען שאלות...</p>
+    }
+    else if (questions.Count == 0)
+    {
+        <p>לא נמצאו שאלות.</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>מזהה</th>
+                    <th>שאלה</th>
+                    <th>תשובה נכונה</th>
+                    <th>רמת קושי</th>
+                    <th>נושא</th>
+                    <th>פעולות</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var question in questions)
+                {
+                    <tr>
+                        <td>@question.QuestionID</td>
+                        <td>@question.QuestionText</td>
+                        <td>@question.CorrectAnswer</td>
+                        <td>@question.Difficulty</td>
+                        <td>@question.Topic</td>
+                        <td>
+                            <button class="btn btn-primary" @onclick="() => EditQuestion(question.QuestionID)">ערוך</button>
+                            <button class="btn btn-danger" @onclick="() => ShowDeleteConfirmation(question.QuestionID)">מחק</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>מזהה</th>
-                <th>שאלה</th>
-                <th>תשובה נכונה</th>
-                <th>רמת קושי</th>
-                <th>נושא</th>
-                <th>פעולות</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var question in questions)
-            {
-                <tr>
-                    <td>@question.QuestionID</td>
-                    <td>@question.QuestionText</td>
-                    <td>@question.CorrectAnswer</td>
-                    <td>@question.Difficulty</td>
-                    <td>@question.Topic</td>
-                    <td>
-                        <button class="btn btn-primary" @onclick="() => EditQuestion(question.QuestionID)">ערוך</button>
-                        <button class="btn btn-danger" @onclick="() => ShowDeleteConfirmation(question.QuestionID)">מחק</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    NavigationManager.NavigateTo("/access-denied");
 }
 
 @code {
@@ -126,9 +117,19 @@ else
     private int? editingQuestionId = null;
     private int? questionIdToDelete = null;
     private Question newQuestion = new();
+    private bool IsAuthorized = false;
 
     protected override async Task OnInitializedAsync()
     {
+        // בדיקת הרשאה
+        IsAuthorized = LoginSession.Role == "Admin";
+
+        if (!IsAuthorized)
+        {
+            NavigationManager.NavigateTo("/access-denied");
+            return;
+        }
+
         await LoadQuestions();
     }
 
@@ -153,43 +154,22 @@ else
     {
         if (editingQuestionId.HasValue)
         {
-            // Update existing question
             var response = await Http.PutAsJsonAsync($"api/questions/{editingQuestionId.Value}", newQuestion);
             if (response.IsSuccessStatusCode)
             {
-                // Update the local list
                 var questionIndex = questions.FindIndex(q => q.QuestionID == editingQuestionId.Value);
                 if (questionIndex >= 0)
                 {
-                    questions[questionIndex] = new Question
-                        {
-                            QuestionID = newQuestion.QuestionID,
-                            QuestionText = newQuestion.QuestionText,
-                            CorrectAnswer = newQuestion.CorrectAnswer,
-                            Difficulty = newQuestion.Difficulty,
-                            Topic = newQuestion.Topic,
-                            IncorrectAnswer1 = newQuestion.IncorrectAnswer1,
-                            IncorrectAnswer2 = newQuestion.IncorrectAnswer2,
-                            IncorrectAnswer3 = newQuestion.IncorrectAnswer3
-                        };
+                    questions[questionIndex] = newQuestion;
                 }
-            }
-            else
-            {
-                Console.WriteLine($"Failed to update question. Status Code: {response.StatusCode}");
             }
         }
         else
         {
-            // Add new question
             var response = await Http.PostAsJsonAsync("api/questions", newQuestion);
             if (response.IsSuccessStatusCode)
             {
                 questions.Add(newQuestion);
-            }
-            else
-            {
-                Console.WriteLine($"Failed to add question. Status Code: {response.StatusCode}");
             }
         }
 
@@ -200,6 +180,11 @@ else
     private void HandleTopicSelection(int topicId)
     {
         newQuestion.Topic = topicId.ToString();
+    }
+
+    private void NavigateBack()
+    {
+        NavigationManager.NavigateTo("http://localhost:5265/admin-dash", forceLoad: true);
     }
 
     private void ShowDeleteConfirmation(int id)

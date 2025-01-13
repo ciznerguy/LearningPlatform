@@ -1,0 +1,24 @@
+﻿@page "/access-denied"
+@inject LearningClassLibrary.Services.LoginSession LoginSession
+
+<h3 style="text-align: center; direction: rtl;">שגיאה בהרשאות</h3>
+
+<p style="text-align: center; direction: rtl;">
+    שלום, @LoginSession.Name
+</p>
+
+<p style="text-align: center; direction: rtl;">
+    @{
+        // התאמת המסר על פי התפקיד
+        string message = LoginSession.Role switch
+        {
+            "Guest" => "כאורח אין לך גישה לדף זה.",
+            "Teacher" => "כמורה אין לך גישה לדף זה.",
+            "Student" => "כתלמיד אין לך גישה לדף זה.",
+            "Admin" => "כמנהל אין לך גישה לדף זה.",
+            _ => "אין לך גישה לדף זה."
+        };
+    }
+    @message
+</p>
+

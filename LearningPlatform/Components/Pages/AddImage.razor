@@ -1,0 +1,103 @@
+﻿@page "/upload-image"
+@using Microsoft.AspNetCore.Components.Forms
+@inject HttpClient Http
+
+<h3>Upload Image</h3>
+
+<div>
+    <label for="ownerId">Owner ID:</label>
+    <!-- Input field for the owner ID (linked to a user in the database) -->
+    <input id="ownerId" type="number" @bind="ownerId" />
+</div>
+
+<div style="margin-top:1rem;">
+    <!-- File input component that lets the user select an image -->
+    <InputFile OnChange="HandleFileSelected" />
+</div>
+
+@if (selectedFile != null)
+{
+    <!-- Display file name and size when a file is selected -->
+    <p>Selected file: @selectedFile.Name (@selectedFile.Size bytes)</p>
+}
+
+<div style="margin-top:1rem;">
+    <!-- Button to trigger the image upload -->
+    <button @onclick="UploadImage">Upload Image</button>
+</div>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <!-- Display success or error message after uploading -->
+    <p>@message</p>
+}
+
+@code {
+    // Stores the owner ID entered by the user
+    private int ownerId;
+
+    // Holds the selected file from the file input
+    private IBrowserFile selectedFile;
+
+    // Stores success or error messages
+    private string message;
+
+    // Triggered when a file is selected
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        // Retrieve the first file (if multiple file selection is allowed, iterate instead)
+        selectedFile = e.File;
+        message = null; // Clear previous messages
+    }
+
+    // Uploads the selected image to the API
+    private async Task UploadImage()
+    {
+        if (selectedFile == null)
+        {
+            message = "Please select an image file.";
+            return;
+        }
+
+        try
+        {
+            using var memoryStream = new MemoryStream();
+            // Read the file data into a MemoryStream
+            await selectedFile.OpenReadStream().CopyToAsync(memoryStream);
+            byte[] fileBytes = memoryStream.ToArray(); // Convert to byte array
+
+            // Create an object to send to the API
+            var imageDto = new ImageDto
+            {
+                OwnerId = ownerId, // Assign the owner ID from input
+                ImageData = fileBytes, // Assign the file data as a byte array
+                ImageType = selectedFile.ContentType // Get the MIME type of the file
+            };
+
+            // Send a POST request to the API with the image data
+            var response = await Http.PostAsJsonAsync("api/images/upload", imageDto);
+            if (response.IsSuccessStatusCode)
+            {
+                message = "Image uploaded successfully!";
+            }
+            else
+            {
+                message = "Upload failed: " + response.ReasonPhrase;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle any exceptions that occur during upload
+            message = "Error: " + ex.Message;
+        }
+    }
+
+    // DTO (Data Transfer Object) representing the image structure sent to the API
+    public class ImageDto
+    {
+        public int ImageId { get; set; }  // Auto-generated when stored in the database
+        public int OwnerId { get; set; }  // User ID who owns the image
+        public byte[] ImageData { get; set; } // Binary image data
+        public string ImageType { get; set; } // MIME type (e.g., "image/png", "image/jpeg")
+    }
+}

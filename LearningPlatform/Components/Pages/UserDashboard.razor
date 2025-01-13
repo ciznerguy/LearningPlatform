@@ -1,0 +1,30 @@
+﻿@page "/user-dash"
+@inject LearningClassLibrary.Services.LoginSession LoginSession
+
+<h3>User Dashboard</h3>
+
+@if (IsLoading)
+{
+    <p>Loading...</p>
+}
+else if (IsLoggedIn)
+{
+    <p> @LoginSession.Name, ברוך הבא </p>
+}
+else
+{
+    <p>שלום אורח</p>
+}
+
+@code {
+    private bool IsLoggedIn => LoginSession.PersonID != 0;
+    private bool IsLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Simulate loading or fetch user details if needed
+        await Task.Delay(500); // Example delay
+        IsLoading = false;
+        StateHasChanged();
+    }
+}

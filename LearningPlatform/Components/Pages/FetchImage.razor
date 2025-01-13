@@ -1,0 +1,80 @@
+﻿@page "/display-image"
+@inject HttpClient Http
+
+<h3>Display Image</h3>
+
+<div>
+    <label for="imageId">Enter Image ID:</label>
+    <!-- Input field to enter the image ID for retrieval -->
+    <input type="number" id="imageId" @bind="imageId" />
+    <!-- Button to trigger image retrieval -->
+    <button @onclick="LoadImage">Load Image</button>
+</div>
+
+@if (isLoading)
+{
+    <!-- Display loading message while the image is being retrieved -->
+    <p>Loading image...</p>
+}
+else if (!string.IsNullOrEmpty(imageDataUrl))
+{
+    <!-- If an image is successfully loaded, display it using a data URL -->
+    <img src="@imageDataUrl" alt="Retrieved Image" />
+}
+else if (hasAttemptedLoad)
+{
+    <!-- If no image is found, display an error message -->
+    <p>Image not found.</p>
+}
+
+@code {
+    // DTO (Data Transfer Object) representing the expected structure of the JSON response from the API.
+    // The API returns an image encoded as a Base64 string, which is automatically converted to a byte array in C#.
+    public class ImageDto
+    {
+        public int ImageId { get; set; } // Unique identifier of the image
+        public int OwnerId { get; set; } // ID of the user who uploaded the image
+        public byte[] ImageData { get; set; } // Binary image data received from the API
+        public string ImageType { get; set; } // MIME type of the image (e.g., "image/png", "image/jpeg")
+    }
+
+    // Stores the generated data URL for the retrieved image.
+    private string imageDataUrl;
+
+    // Bound property to store the image ID entered by the user.
+    private int imageId;
+
+    // Flags to track loading status and whether an image load has been attempted.
+    private bool isLoading = false;
+    private bool hasAttemptedLoad = false;
+
+    // Method to load an image from the API based on the entered image ID.
+    private async Task LoadImage()
+    {
+        isLoading = true; // Set loading state to true
+        hasAttemptedLoad = true; // Indicate that a load attempt has been made
+        imageDataUrl = null; // Reset the image URL
+
+        try
+        {
+            // Construct the API request URL using the entered image ID.
+            var imageDto = await Http.GetFromJsonAsync<ImageDto>($"api/images/{imageId}");
+
+            // If a valid response is received, convert the byte array to a Base64 string and generate a data URL.
+            if (imageDto != null && imageDto.ImageData != null && !string.IsNullOrEmpty(imageDto.ImageType))
+            {
+                string base64Image = Convert.ToBase64String(imageDto.ImageData);
+                imageDataUrl = $"data:{imageDto.ImageType};base64,{base64Image}";
+            }
+        }
+        catch (Exception ex)
+        {
+            // If an error occurs (e.g., API is unavailable), reset the image display.
+            imageDataUrl = null;
+        }
+        finally
+        {
+            isLoading = false; // Set loading state to false once the request is complete
+        }
+    }
+}

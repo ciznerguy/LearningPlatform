@@ -1,0 +1,76 @@
+﻿@page "/coderunner"
+@inject HttpClient Http
+
+<h3>הרץ קוד C#</h3>
+
+<!-- Text area for the user to input C# code -->
+<textarea @bind="UserCode" rows="10" cols="60"></textarea>
+<br />
+
+<!-- Button to trigger code execution -->
+<button @onclick="RunCode">Run</button>
+
+<!-- Display the output if available -->
+@if (!string.IsNullOrEmpty(Output))
+{
+    <p><strong>תוצאה:</strong></p>
+    <pre>@Output</pre>
+}
+
+@code {
+    // The C# code entered by the user
+    private string UserCode = @"using System;
+
+public class Program
+{
+    public static void Main()
+    {
+        // Enter code here
+        Console.WriteLine(""Hello, World!"");
+    }
+}";
+
+    // Variable to hold the output from the API
+    private string Output = "";
+
+    // Stage 1: RunCode method with try-catch error handling.
+    // This helps us catch any exceptions (for example, if the API endpoint isn't configured properly)
+    private async Task RunCode()
+    {
+        Console.WriteLine("Sending request to API...");
+
+        var response = await Http.PostAsJsonAsync("api/compiler", new { Code = UserCode });
+
+        Console.WriteLine($"Response Status: {response.StatusCode}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            var responseText = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Raw Response: {responseText}");
+
+            var jsonResponse = await response.Content.ReadFromJsonAsync<CompilerResponse>();
+
+            if (jsonResponse != null && !string.IsNullOrEmpty(jsonResponse.Output))
+            {
+                Console.WriteLine($"Received Output: {jsonResponse.Output}");
+                Output = jsonResponse.Output;
+            }
+            else
+            {
+                Console.WriteLine("Warning: Compiler response is empty!");
+                Output = "No output received";
+            }
+        }
+        else
+        {
+            Console.WriteLine("Error: Failed to retrieve response from API");
+            Output = "Error in execution";
+        }
+    }
+
+    private class CompilerResponse
+    {
+        public string Output { get; set; }
+    }
+
+}

@@ -1,23 +1,87 @@
 ﻿@inherits LayoutComponentBase
+@inject LearningClassLibrary.Services.LoginSession LoginSession
+@inject NavigationManager NavigationManager
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<!-- Reference the app.css and add global styles for full-screen layout -->
+<link href="/css/app.css" rel="stylesheet">
+<style>
+    /* Ensure html and body fill the viewport */
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+</style>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+<div class="d-flex flex-column min-vh-100">
+    <!-- Top Navigation Bar -->
+    <nav class="navbar custom-navbar navbar-expand-lg">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <!-- שם המשתמש וכפתור כניסה בצד ימין -->
+            <div class="d-flex align-items-center gap-2 ms-auto">
+                <span class="navbar-text">
+                    @if (LoginSession.IsGuest())
+                    {
+                        <text> שלום, אורח </text>
+                    }
+                    else
+                    {
+                        <text>שלום, @LoginSession.Name</text>
+                    }
+                </span>
+
+                @if (LoginSession.IsGuest())
+                {
+                    <button class="btn btn-success" @onclick="NavigateToLogin"> כניסה </button>
+                }
+                else
+                {
+                    <button class="btn btn-danger" @onclick="HandleLogout"> יציאה </button>
+                }
+            </div>
+
+            <!-- תפריט במרכז -->
+            <div class="collapse navbar-collapse justify-content-center">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">בית</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about">עוד על האתר</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- לוגו האתר בצד שמאל -->
+            <a class="navbar-brand" href="/">C# אתר ללימוד</a>
         </div>
+    </nav>
 
-        <article class="content px-4">
+    <!-- Main Content -->
+    <main class="flex-grow-1">
+        <div class="container mt-4">
             @Body
-        </article>
+        </div>
     </main>
+
+    <!-- Footer -->
+    <footer class="custom-footer" style="background-color: #D9EEE1; color: black;">
+        © C# 2025 לימוד שפת .
+    </footer>
 </div>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
-</div>
+<!-- Reference the custom JavaScript file for kiosk functionality -->
+<script src="js/site.js"></script>
+
+@code {
+    private void NavigateToLogin()
+    {
+        NavigationManager.NavigateTo("/login");
+    }
+
+    private void HandleLogout()
+    {
+        LoginSession.ClearSession();
+        NavigationManager.NavigateTo("/", forceLoad: true);
+    }
+}

@@ -1,30 +1,44 @@
 ﻿@page "/login"
+@layout Components.Layout.EmptyLayout
+
 @inject NavigationManager Navigation
 @inject HttpClient Http
+@using LearningClassLibrary.Services
+@inject LoginSession LoginSession
 
-<h3>התחברות</h3>
+<div class="d-flex min-vh-100">
+    <!-- Left Side -->
+    <div class="d-flex flex-column justify-content-center align-items-center p-5" style="width: 40%; background-color: #D9EEE1; color: black;">
+        <h1 class="mb-4">לבגרות C# לימוד</h1>
+        <p>C# אתר ללימוד שפת התכנות</p>
+    </div>
 
-<div class="card" style="max-width: 400px; margin: auto;">
-    <div class="card-body">
-        <form @onsubmit="HandleLogin">
-            <div class="mb-3">
-                <label for="email" class="form-label">אימייל</label>
-                <input type="email" id="email" @bind="loginModel.Email" class="form-control" required />
+    <!-- Right Side -->
+    <div class="d-flex flex-column justify-content-center align-items-center bg-light p-5" style="width: 60%;">
+        <div style="max-width: 400px; width: 100%;">
+            <h3 class="text-center">התחל ללמוד</h3>
+            <form @onsubmit="HandleLogin">
+                <div class="mb-3">
+                    <label for="email" class="form-label">אמייל</label>
+                    <input type="email" id="email" @bind="loginModel.Email" class="form-control" required />
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">סיסמה</label>
+                    <input type="password" id="password" @bind="loginModel.Password" class="form-control" required />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">כניסה</button>
+            </form>
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger mt-3">
+                    @errorMessage
+                </div>
+            }
+            <div class="text-center mt-3">
+                <a href="/register" class="btn btn-link">צור חשבון</a>
+                <a href="/forgot-password" class="btn btn-link">שכחת סיסמה?</a>
             </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">סיסמה</label>
-                <input type="password" id="password" @bind="loginModel.Password" class="form-control" required />
-            </div>
-            <button type="submit" class="btn btn-primary w-100">התחבר</button>
-        </form>
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <div class="alert alert-danger mt-3">
-                @errorMessage
-            </div>
-        }
-        <div class="text-center mt-3">
-            <a href="/register" class="btn btn-link">הרשמת משתמש חדש</a>
         </div>
     </div>
 </div>
@@ -35,19 +49,58 @@
 
     private async Task HandleLogin()
     {
-        errorMessage = null; // Reset error message
+        errorMessage = null; // איפוס הודעת השגיאה
         try
         {
-            var response = await Http.PostAsJsonAsync("api/persons/login", loginModel);
+            var response = await Http.PostAsJsonAsync("api/person/login", loginModel);
+
+            // הדפס סטטוס ותגובה ל-Console
+            Console.WriteLine($"Response Status Code: {response.StatusCode}");
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Response Content: {responseContent}");
 
             if (response.IsSuccessStatusCode)
             {
-                // Handle successful login (e.g., redirect to homepage)
-                Navigation.NavigateTo("/");
+                var userInfo = await response.Content.ReadFromJsonAsync<UserInfoModel>();
+
+                if (userInfo != null)
+                {
+                    LoginSession.SetLoginDetails(
+                        userInfo.PersonID,
+                        userInfo.Name,
+                        userInfo.Email,
+                        userInfo.Role
+                    );
+
+                    string redirectUrl;
+
+                    switch (userInfo.Role)
+                    {
+                        case "Admin":
+                            redirectUrl = "/admin-dash";
+                            break;
+                        case "Teacher":
+                            redirectUrl = "/teacher-dash";
+                            break;
+                        case "Student":
+                            redirectUrl = "/user-dash";
+                            break;
+                        default:
+                            redirectUrl = "/";
+                            break;
+                    }
+
+                    Navigation.NavigateTo(redirectUrl, forceLoad: true);
+
+                }
+                else
+                {
+                    errorMessage = "לא ניתן לקרוא את פרטי המשתמש.";
+                }
             }
             else
             {
-                errorMessage = "האימייל או הסיסמה אינם נכונים.";
+                errorMessage = $"אימייל או סיסמה לא נכונים. תגובת שרת: {responseContent}";
             }
         }
         catch (Exception ex)
@@ -60,5 +113,21 @@
     {
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+    }
+
+    public class UserInfoModel
+    {
+        public int PersonID { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+    }
+
+    public enum RoleIn
+    {
+        Guest,
+        Student,
+        Teacher,
+        Admin
     }
 }

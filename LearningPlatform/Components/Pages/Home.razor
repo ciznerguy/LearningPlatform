@@ -1,7 +1,94 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Components.Web
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HomePage</title>
+    <!-- Link to Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        /* Ensure the html and body fill the viewport and reset default margins/padding */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        /* Consistent box-sizing */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        /* Base styling for body */
+        body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            text-align: right;
+            color: #333333;
+        }
+        /* Hero section fills the entire viewport */
+        .hero-section {
+            background: url('/Images/matrix-7178709_1920.png') no-repeat center center;
+            background-size: cover;
+            height: 100vh; /* Full viewport height */
+            width: 100%; /* Full width */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff; /* Text color set to white */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            text-align: center;
+        }
+            /* Styling for hero section headings and paragraphs */
+            .hero-section h1 {
+                font-size: 2.5rem;
+                font-weight: bold;
+            }
 
-<h1>Hello, world!</h1>
+            .hero-section p {
+                font-size: 1.5rem;
+            }
+        /* Info section styling remains unchanged */
+        .info-section {
+            background-color: #D9EEE1;
+            color: #333333;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        /* Footer styling */
+        .footer {
+            color: #333333;
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section that fills the screen -->
+    <div class="hero-section">
+        <h1>אתר למורי מדעי המחשב </h1>
+        <p>
+            אתר למורי מדעי המחשב<br>
+            האתר מאפשר בניית דפי עבודה, מבדקים ומבחנים.<br>
+            ניתן להריץ את הקוד באתר ללא שימוש בקומפיילר חיצוני.
+        </p>
 
-Welcome to your new app.
+     
+    </div>
+    <!-- Additional Content -->
+    <div class="info-section">
+        <h2>בניית דפי עבודה, מבדקים ומבחנים בשפת  -C#</h2>
+        <p>
+            האתר כולל קומפיילר המאפשר הרצת תכניות ובדיקתן בדפדפן
+
+        </p>
+        
+    </div>
+  
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

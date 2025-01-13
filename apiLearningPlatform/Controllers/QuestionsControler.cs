@@ -24,6 +24,14 @@ namespace LearningPlatform.API.Controllers
             var questions = await _questionService.GetAllQuestionsAsync();
             return Ok(questions);
         }
+        //Get Questions Count
+ [      HttpGet("count")]
+
+        public async Task<IActionResult> GetQuestionsCount()
+        {
+            var questions = await _questionService.GetQuestionsCountAsync();
+            return Ok(questions);
+        }
 
         // Get question by ID
         [HttpGet("{id}")]
