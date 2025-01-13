@@ -1,0 +1,83 @@
+﻿@page "/question-num-1"
+@inject IJSRuntime JS
+@inject HttpClient Http
+
+<h3>יש לכתוב את הקוד כאן</h3>
+
+<!-- כפתור לכניסה לקיוסק מוד -->
+<button @onclick="EnterKioskMode">כניסה לקיוסק מוד</button>
+
+<!-- הצגת השאלה -->
+<p dir="rtl">
+    <strong>שאלה:</strong> כתוב תוכנית ב-C# שמדפיסה למסך <span dir="ltr">"Hello, World!"</span>.
+</p>
+
+<!-- אזור הזנת הקוד -->
+<textarea @bind="UserCode" rows="10" cols="60"></textarea>
+<br />
+
+<!-- כפתור להפעלת הקוד -->
+<button @onclick="RunCode">Run</button>
+
+<!-- הצגת הפלט -->
+@if (!string.IsNullOrEmpty(Output))
+{
+    <p><strong>תוצאה:</strong></p>
+    <pre>@Output</pre>
+
+    @if (string.Equals(Output.Trim(), "Hello, World!", StringComparison.OrdinalIgnoreCase))
+    {
+        <p style="color: green;"><strong>✔ תשובה נכונה!</strong></p>
+    }
+    else
+    {
+        <p style="color: red;"><strong>✘ תשובה שגויה! נסה שוב.</strong></p>
+    }
+}
+
+@code {
+    private string UserCode = @"using System;
+
+public class Program
+{
+    public static void Main()
+    {
+        Console.WriteLine(""Hello, World!"");
+    }
+}";
+    private string Output = "";
+
+    // במקום לשמור הפניה קבועה, נייבא את המודול בכל קריאה
+    private async Task EnterKioskMode()
+    {
+        // ייבוא המודול בכל קריאה
+        var jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/js/site.js?v=1");
+        await jsModule.InvokeVoidAsync("enterFullScreen");
+    }
+
+    private async Task RunCode()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/compiler", new { Code = UserCode });
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonResponse = await response.Content.ReadFromJsonAsync<CompilerResponse>();
+                Output = jsonResponse?.Output ?? "לא התקבלה תשובה מהקומפיילר.";
+            }
+            else
+            {
+                Output = $"שגיאה בביצוע הקוד: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            Output = $"שגיאת מערכת: {ex.Message}";
+        }
+    }
+
+    private class CompilerResponse
+    {
+        public string Output { get; set; }
+    }
+}

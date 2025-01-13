@@ -3,7 +3,7 @@ using LearningClassLibary.Interfaces;
 using LearningClassLibary.Models;
 using LearningClassLibrary.Interfaces;
 using LearningClassLibrary.Models;
-
+//
 namespace LearningPlatform.API.Controllers
 {
     [Route("api/[controller]")]
@@ -22,6 +22,14 @@ namespace LearningPlatform.API.Controllers
         public async Task<IActionResult> GetAllQuestions()
         {
             var questions = await _questionService.GetAllQuestionsAsync();
+            return Ok(questions);
+        }
+        //Get Questions Count
+ [      HttpGet("count")]
+
+        public async Task<IActionResult> GetQuestionsCount()
+        {
+            var questions = await _questionService.GetQuestionsCountAsync();
             return Ok(questions);
         }
 

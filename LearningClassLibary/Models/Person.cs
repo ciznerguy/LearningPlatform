@@ -5,6 +5,7 @@ namespace LearningClassLibary.Models
 {
     public enum RoleIn
     {
+        Guest,
         Student,
         Teacher,
         Admin
@@ -32,12 +33,12 @@ namespace LearningClassLibary.Models
         public string PhoneNumber { get; set; }
 
         [Required]
-        public DateTime DateOfBirth { get; set; }
+        public DateTime? DateOfBirth { get; set; }
 
         [Required]
         public RoleIn Role { get; set; }
 
-        [Required]
+      
         [MaxLength(255)] // Length of password
         public string Password { get; set; } // New field for Password
 

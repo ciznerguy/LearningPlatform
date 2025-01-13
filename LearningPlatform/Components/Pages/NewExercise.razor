@@ -1,0 +1,70 @@
+﻿@page "/newexercise"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>שאלה לתכנות</h3>
+
+<!-- Display the question text -->
+<p><strong>שאלה:</strong></p>
+<p>@QuestionText</p>
+
+<!-- Text area for the user to input C# code -->
+<p><strong>קוד ראשוני:</strong></p>
+<textarea @bind="UserCode" rows="10" cols="60"></textarea>
+<br />
+
+<!-- Button to trigger code execution -->
+<button @onclick="RunCode">הרץ קוד</button>
+<button @onclick="GoBack">חזור לדף הקודם</button>
+
+<!-- Display the output if available -->
+@if (!string.IsNullOrEmpty(Output))
+{
+    <p><strong>תוצאה:</strong></p>
+    <pre>@Output</pre>
+}
+
+@code {
+    // מחרוזת לשאלה
+    private string QuestionText = "הזן שאלה לתכנות כאן";
+
+    // מחרוזת לקוד ראשוני
+    private string UserCode = @"using System;
+
+public class Program
+{
+    public static void Main()
+    {
+        // הזן קוד כאן
+        Console.WriteLine(""Hello, World!"");
+    }
+}";
+
+    private string Output = ""; // פלט התוצאה
+
+    // שלב 1: הרצת הקוד
+    private async Task RunCode()
+    {
+        var response = await Http.PostAsJsonAsync("api/compiler", new { Code = UserCode });
+
+        if (response.IsSuccessStatusCode)
+        {
+            var jsonResponse = await response.Content.ReadFromJsonAsync<CompilerResponse>();
+            Output = jsonResponse?.Output ?? "No output received";
+        }
+        else
+        {
+            Output = "Error in execution";
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private class CompilerResponse
+    {
+        public string Output { get; set; }
+    }
+}

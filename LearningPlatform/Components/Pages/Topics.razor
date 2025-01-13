@@ -1,0 +1,142 @@
+﻿@page "/topics"
+@inject HttpClient Http
+@using LearningClassLibrary.Models
+
+<h3>רשימת נושאים</h3>
+
+<div style="text-align: right; margin-bottom: 10px;">
+    <button class="btn btn-primary" @onclick="ToggleAddTopic">הוסף נושא</button>
+</div>
+
+@if (IsAddingTopic)
+{
+    <div class="mb-3">
+        <h4>הוסף נושא חדש</h4>
+        <div>
+            <label for="topicName">שם הנושא:</label>
+            <input id="topicName" class="form-control" @bind="newTopic.TopicName" />
+        </div>
+        <div>
+            <label for="topicDescription">תיאור:</label>
+            <textarea id="topicDescription" class="form-control" @bind="newTopic.Description"></textarea>
+        </div>
+        <div class="mt-2">
+            <button class="btn btn-success" @onclick="AddTopic">שמור</button>
+            <button class="btn btn-secondary" @onclick="CancelAddTopic">ביטול</button>
+        </div>
+    </div>
+}
+
+@if (IsLoading)
+{
+    <p>טוען נתונים...</p>
+}
+else if (topics == null || topics.Count == 0)
+{
+    <p>לא נמצאו נושאים.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>שם הנושא</th>
+                <th>תיאור</th>
+                <th>פעולות</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var topic in topics)
+            {
+                <tr>
+                    <td>@topic.TopicName</td>
+                    <td>@(string.IsNullOrEmpty(topic.Description) ? "אין תיאור" : topic.Description)</td>
+                    <td>
+                        <button class="btn btn-success btn-sm" @onclick="() => EditTopic(topic.TopicID)">ערוך</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteTopic(topic.TopicID)">מחק</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private bool IsLoading = true;
+    private bool IsAddingTopic = false;
+    private List<Topic> topics = new();
+    private Topic newTopic = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            topics = await Http.GetFromJsonAsync<List<Topic>>("api/topics") ?? new List<Topic>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching topics: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ToggleAddTopic()
+    {
+        IsAddingTopic = true;
+        newTopic = new Topic(); // איפוס האובייקט להוספה
+    }
+
+    private void CancelAddTopic()
+    {
+        IsAddingTopic = false;
+        newTopic = new Topic();
+    }
+
+    private async Task AddTopic()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(newTopic.TopicName))
+            {
+                Console.WriteLine("שם הנושא חובה.");
+                return;
+            }
+
+            var response = await Http.PostAsJsonAsync("api/topics", newTopic);
+            if (response.IsSuccessStatusCode)
+            {
+                topics = await Http.GetFromJsonAsync<List<Topic>>("api/topics") ?? new List<Topic>();
+                IsAddingTopic = false;
+            }
+            else
+            {
+                Console.WriteLine($"Error adding topic: {response.ReasonPhrase}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding topic: {ex.Message}");
+        }
+    }
+
+    private void EditTopic(int topicId)
+    {
+        // פונקציה לעריכת נושא בעתיד
+    }
+
+    private async Task DeleteTopic(int topicId)
+    {
+        try
+        {
+            await Http.DeleteAsync($"api/topics/{topicId}");
+            topics = await Http.GetFromJsonAsync<List<Topic>>("api/topics") ?? new List<Topic>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting topic: {ex.Message}");
+        }
+    }
+}

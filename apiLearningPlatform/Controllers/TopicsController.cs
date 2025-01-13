@@ -68,14 +68,25 @@ namespace LearningPlatform.API.Controllers
         [HttpDelete("{TopicID}")]
         public async Task<IActionResult> DeleteTopic(int TopicID)
         {
-            var topic = await _topicService.GetTopicByIdAsync(TopicID);
-            if (topic == null)
+            try
             {
-                return NotFound();
-            }
+                var topic = await _topicService.GetTopicByIdAsync(TopicID);
+                if (topic == null)
+                {
+                    return NotFound(new { Message = "Topic not found." });
+                }
 
-            await _topicService.DeleteTopicAsync(TopicID);
-            return NoContent();
+                await _topicService.DeleteTopicAsync(TopicID);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while deleting the topic." });
+            }
         }
     }
 }

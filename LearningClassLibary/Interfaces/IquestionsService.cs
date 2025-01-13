@@ -11,5 +11,7 @@ namespace LearningClassLibrary.Interfaces
         Task AddQuestionAsync(Question question);
         Task UpdateQuestionAsync(Question question);
         Task DeleteQuestionAsync(int questionId);
+
+        Task<int> GetQuestionsCountAsync();
     }
 }

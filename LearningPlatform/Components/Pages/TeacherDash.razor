@@ -1,0 +1,36 @@
+﻿@page "/teacher-dash"
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+@inject LearningClassLibrary.Services.LoginSession LoginSession
+
+<h3>TeacherDash</h3>
+
+@if (IsLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <p>@LoginSession.Name, ברוך הבא</p>
+}
+
+@code {
+    private bool IsLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // קריאה ל-API
+            await HttpClient.GetAsync("api/Dashboard/teacher");
+        }
+        catch
+        {
+            NavigationManager.NavigateTo("/access-denied");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

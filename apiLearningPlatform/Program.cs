@@ -3,6 +3,7 @@ using MySql.Data.MySqlClient;
 using LearningPlatform.API.Services;
 using LearningClassLibrary.Interfaces;
 using LearningClassLibrary.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 
 namespace apiLearningPlatform
@@ -46,6 +47,7 @@ namespace apiLearningPlatform
                 return new TopicService(connectionString);
             });
 
+            builder.Services.AddSingleton<LearningClassLibrary.Services.CodeExecutionService>();
 
 
 

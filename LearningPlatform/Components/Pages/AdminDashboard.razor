@@ -1,0 +1,150 @@
+﻿@page "/admin-dash"
+@inject NavigationManager NavigationManager
+@inject LearningClassLibrary.Services.LoginSession LoginSession
+@inject HttpClient Http
+
+@if (!LoginSession.Role.Equals("Admin"))
+{
+    <div class="alert alert-danger text-center" role="alert">
+        אינך רשאי לצפות בדף זה. תועבר לדף הבית בעוד @countdown שניות...
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center">
+        <h3>אדמין מסך ראשי</h3>
+    </div>
+
+    @if (IsLoading)
+    {
+        <p>טוען...</p>
+    }
+    else
+    {
+        <div class="card-group">
+            <div class="card" style="width: 200px;">
+                <img src="/images/3289574_clan_family_group_peer_people_icon.png" class="card-img-top" style="width: 50px; height: 50px;" alt="סמל">
+                <div class="card-body">
+                    <h5 class="card-title">ערוך משתמשים</h5>
+                    <p class="card-text">מחק - הוסף - הפוך לאדמין</p>
+                    <div class="student-count">
+                        <span class="count-number" style="font-size: 30px; font-weight: bold; margin-bottom: 10px;">
+                            @studentsCount תלמידים רשומים
+                        </span>
+                    </div>
+                    <button class="btn btn-primary" @onclick="NavigateToEditUsers">ערוך משתמשים</button>
+                </div>
+            </div>
+
+            <div class="card" style="width: 200px;">
+                <img src="/images/3289574_clan_family_group_peer_people_icon.png" class="card-img-top" style="width: 50px; height: 50px;" alt="סמל">
+                <div class="card-body">
+                    <h5 class="card-title">עריכת שאלות</h5>
+                    <p class="card-text">הוספת ומחיקת שאלות ללמידה</p>
+                    <div class="question-count">
+                        <span class="count-number" style="font-size: 30px; font-weight: bold; margin-bottom: 10px;">
+                            @questionsCount מספר שאלות
+                        </span>
+                    </div>
+                    <button class="btn btn-primary" @onclick="NavigateToEditQuestions">ערוך שאלות</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    // משתנה הספירה לאחור
+    private int countdown = 5;
+    // משתנה לציון סטטוס טעינה
+    private bool IsLoading = true;
+    // משתנים למספרי תלמידים ושאלות
+    private int studentsCount = 0;
+    private int questionsCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // אם המשתמש אינו אדמין - מתחילים ספירה לאחור ומפנים בסיום
+        if (!LoginSession.Role.Equals("Admin"))
+        {
+            _ = StartCountdown();
+            return;
+        }
+
+        // למשתמשי אדמין - טוענים נתונים מה-API
+        await LoadStudentsCountAsync();
+        await LoadQuestionsCountAsync();
+        IsLoading = false;
+    }
+
+    // פונקציה לספירה לאחור והפניה לדף הבית
+    private async Task StartCountdown()
+    {
+        while (countdown > 0)
+        {
+            await Task.Delay(1000); // המתנה של שנייה
+            countdown--;
+            StateHasChanged(); // עדכון הממשק עם השינוי בספירה
+        }
+        NavigationManager.NavigateTo("/");
+    }
+
+    // קריאה ל-API לקבלת מספר התלמידים
+    private async Task LoadStudentsCountAsync()
+    {
+        try
+        {
+            var result = await Http.GetFromJsonAsync<StudentsCountResult>("api/person/students-count");
+            if (result != null)
+            {
+                studentsCount = result.StudentsCount;
+            }
+            else
+            {
+                Console.WriteLine("API החזירה תוצאה ריקה עבור מספר תלמידים.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"שגיאה בטעינת מספר תלמידים: {ex.Message}");
+        }
+    }
+
+    // קריאה ל-API לקבלת מספר השאלות
+    private async Task LoadQuestionsCountAsync()
+    {
+        try
+        {
+            var result = await Http.GetFromJsonAsync<int>("api/Questions/count");
+            questionsCount = result;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"שגיאה בטעינת מספר שאלות: {ex.Message}");
+        }
+    }
+
+    // ניווט לעמוד עריכת משתמשים
+    private void NavigateToEditUsers()
+    {
+        NavigationManager.NavigateTo("/editusers");
+    }
+
+    // ניווט לעמוד עריכת שאלות
+    private void NavigateToEditQuestions()
+    {
+        NavigationManager.NavigateTo("/questions");
+    }
+
+    // מחלקה לקבלת מספר תלמידים מה-API
+    public class StudentsCountResult
+    {
+        public int StudentsCount { get; set; }
+    }
+
+    // מחלקה לקבלת מספר שאלות (אם יש צורך בהמשך)
+    public class QuestionsCountResult
+    {
+        public int QuestionsCount { get; set; }
+    }
+}

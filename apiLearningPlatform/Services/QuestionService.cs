@@ -47,6 +47,34 @@ namespace LearningPlatform.API.Services
             return questions;
         }
 
+        // Get question count
+
+        public async Task<int> GetQuestionsCountAsync()
+        {
+            try
+            {
+                using var connection = new MySqlConnection(_connectionString);
+                await connection.OpenAsync();
+                var query = "SELECT COUNT(*) FROM questions";
+                using var command = new MySqlCommand(query, connection);
+                var result = await command.ExecuteScalarAsync();
+                if (result != null && result is long count)
+                {
+                    return (int)count;
+                }
+                else
+                {
+                    // טיפול במקרה של שגיאה או null
+                    return 0; // או זרוק exception
+                }
+            }
+            catch (Exception ex)
+            {
+                // טיפול בשגיאה
+                Console.WriteLine($"Error in GetQuestionsCountAsync: {ex.Message}");
+                return 0; // או זרוק exception
+            }
+        }
         // Get question by ID
         public async Task<Question?> GetQuestionByIdAsync(int questionId)
         {
